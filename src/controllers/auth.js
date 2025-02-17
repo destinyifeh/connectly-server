@@ -74,6 +74,12 @@ export const loginController = async (req, res, next) => {
     })(req, res, next);
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };
 
@@ -153,6 +159,12 @@ export const signupController = async (req, res) => {
     }
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };
 
@@ -190,6 +202,12 @@ export const forgotPasswordController = async (req, res) => {
     });
   } catch (err) {
     console.log(err.message);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };
 
@@ -254,7 +272,10 @@ export const userNewPasswordController = async (req, res) => {
       verifyTokenExpires: {$gt: Date.now()},
     });
     if (user) {
-      const compareUserPassword = comparePassword(password, user.password);
+      const compareUserPassword = await comparePassword(
+        password,
+        user.password,
+      );
       console.log(compareUserPassword, 'compare user');
       if (compareUserPassword === true) {
         return res.status(401).json({
@@ -284,6 +305,12 @@ export const userNewPasswordController = async (req, res) => {
     });
   } catch (err) {
     console.log(err, 'new pass err');
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };
 
@@ -328,7 +355,12 @@ export const verifyTokenController = async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    res.status(500).json({code: 500, message: 'Server error' + error});
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };
 
@@ -367,5 +399,58 @@ export const resendVerificationTokenController = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
+  }
+};
+
+export const changePasswordController = async (req, res) => {
+  const result = validationResult(req);
+  console.log(result, 'change val result');
+  if (!result.isEmpty()) {
+    return res.status(400).json({
+      error: result.array(),
+      status: 'error',
+      message: 'Invalid or incomplete form data',
+      code: '400',
+    });
+  }
+  const {
+    params: {id},
+    body: {password},
+    user,
+  } = req;
+
+  console.log(password, 'passser');
+  try {
+    const compareUserPassword = await comparePassword(password, user.password);
+    console.log(compareUserPassword, 'compare user');
+    if (compareUserPassword === true) {
+      return res.status(401).json({
+        message: 'New password must be different from the old one.',
+        code: '401',
+        status: 'error',
+      });
+    }
+    let securePassword = await encryptPassword(password);
+    user.password = securePassword;
+    await user.save();
+    res.status(200).json({
+      code: '200',
+      message: 'Password updated. Please log in again.',
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };

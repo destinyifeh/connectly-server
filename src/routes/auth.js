@@ -1,7 +1,9 @@
 import {Router} from 'express';
 import controllers from '../controllers/index.js';
+import {verifyUser} from '../middlewares/auth.js';
 import upload from '../middlewares/image-uploader.js';
 import {
+  changePasswordValidation,
   forgotValidation,
   loginValidation,
   resetValidation,
@@ -41,5 +43,12 @@ router.post(
 router.post(
   '/api/v1/user/resend-token',
   controllers.resendVerificationTokenController,
+);
+
+router.put(
+  '/api/v1/user/change-password/:id',
+  verifyUser,
+  changePasswordValidation,
+  controllers.changePasswordController,
 );
 export default router;

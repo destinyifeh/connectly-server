@@ -1,46 +1,68 @@
-import {io} from '../../../server.js';
+import {Server} from 'socket.io';
+import {Chat} from '../../models/chats.js';
+const userSockets = {}; // Store user socket connections
 
-// Listen for incoming connections
-io.on('connection', socket => {
-  console.log('a user connected yes o');
-
-  // Listen for "message" event from the client
-  socket.on('sendMessage', messageData => {
-    console.log('Received message data:', messageData);
-
-    // Create a new chat message based on received data
-    //   const newMessage = new Chat({
-    //     text: messageData.text,
-    //     image: messageData.image,
-    //     user: messageData.user,
-    //     sent: true,
-    //     received: false,
-    //     createdAt: new Date(),
-    //   });
-
-    // Save to the database and emit to all clients
-    //   newMessage.save().then((savedMessage) => {
-    //     io.emit('newMessage', savedMessage); // Emit event with saved message to all clients
-    //   });
-
-    const payload = {
-      text,
-      image,
-      user: {
-        _id: userId,
-        name: username,
-        avatar: profilePhotoUrl,
-      },
-      sent: true,
-      received: false,
-      createdAt: new Date(),
-    };
-
-    io.emit('newMessage', payload);
+const initializeSocket = server => {
+  const io = new Server(server, {
+    cors: {
+      origin: '*', // Adjust this based on your security requirements
+      methods: ['GET', 'POST'],
+    },
   });
 
-  // Handle user disconnect
-  socket.on('disconnect', () => {
-    console.log('user disconnected yesoo');
+  io.on('connection', socket => {
+    console.log('User connected:', socket.id);
+
+    socket.on('userConnected', userId => {
+      userSockets[userId] = socket.id;
+      console.log(`User ${userId} is online with socket ID ${socket.id}`);
+      // Notify the frontend that this user is online
+      io.emit('userStatus', {userId, isOnline: true});
+    });
+
+    socket.on('sendMessage', async messageData => {
+      console.log('Received message:', messageData);
+
+      try {
+        // const savedMessage = await Chat.create(messageData);
+        const savedMessage = await Chat.create({
+          ...messageData,
+          _id: undefined,
+        });
+        console.log(savedMessage, 'saved db');
+        const receiverSocketId = userSockets[messageData.receiverId];
+
+        if (receiverSocketId) {
+          console.log(
+            `Message sent to user ${messageData.receiverId} at socket ${receiverSocketId}`,
+          );
+          io.to(receiverSocketId).emit('newMessage', savedMessage);
+          console.log(`Message sent to user ${messageData.receiverId}`);
+        } else {
+          console.log(
+            `User ${messageData.receiverId} is offline. Message saved.`,
+          );
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    });
+
+    socket.on('disconnect', () => {
+      for (let userId in userSockets) {
+        if (userSockets[userId] === socket.id) {
+          console.log(`User ${userId} disconnected`);
+          // Notify all clients that the user is offline
+          io.emit('userStatus', {userId, isOnline: false});
+
+          delete userSockets[userId];
+          break;
+        }
+      }
+    });
   });
-});
+
+  return io;
+};
+
+export default initializeSocket;

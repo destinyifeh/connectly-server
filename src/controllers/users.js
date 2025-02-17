@@ -5,17 +5,119 @@ import {
 import {User} from '../models/users.js';
 
 export const getUsersController = async (req, res) => {
+  const {
+    params: {id},
+    query: {query, minAge, maxAge, gender},
+    user,
+  } = req;
+  console.log(id, 'ide', user);
+  console.log(query, 'queriess');
   try {
-    const users = await User.find({}).sort({createdAt: -1});
-    console.log(users, 'users');
-    res.status(200).json({
-      status: 'success',
-      code: '200',
-      users: users,
-      message: 'Users fetched succesfully',
-    });
+    if (query === 'foryou') {
+      const users = await User.find({isActive: true, _id: {$ne: id}}).sort({
+        createdAt: -1,
+      });
+      console.log(users, 'users');
+      if (users?.length > 0) {
+        return res.status(200).json({
+          status: 'success',
+          code: '200',
+          users: users,
+          message: 'Users fetched succesfully',
+        });
+      }
+      return res.status(404).json({
+        status: 'not found',
+        userCode: '404',
+        userMessage: 'No active users',
+        users: [],
+      });
+    }
+    if (query === 'fav') {
+      const favList = user.favourites;
+      const users = await User.find({
+        isActive: true,
+        _id: {$in: favList}, // Use $in to find users whose _id is in favList
+      }).sort({createdAt: -1});
+
+      console.log(users, 'fav users');
+      if (users?.length > 0) {
+        return res.status(200).json({
+          status: 'success',
+          code: '200',
+          users: users,
+          message: 'Favourites users fetched succesfully',
+        });
+      }
+      return res.status(200).json({
+        status: 'not found',
+        userCode: '404',
+        userMessage: 'No favourite users',
+        users: [],
+      });
+    }
+
+    if (query === 'nearby') {
+      const users = await User.find({
+        isActive: true,
+        city: user.city,
+        _id: {$ne: id},
+      }).sort({
+        createdAt: -1,
+      });
+      console.log(users, 'users nearby');
+      if (users?.length > 0) {
+        return res.status(200).json({
+          status: 'success',
+          code: '200',
+          users: users,
+          message: 'Nearby uers fetched succesfully',
+        });
+      }
+      return res.status(200).json({
+        status: 'not found',
+        userCode: '404',
+        userMessage: 'No nearby users',
+        users: [],
+      });
+    }
+
+    if (query === 'fil') {
+      const filter = {
+        age: {$gte: minAge, $lte: maxAge},
+      };
+
+      if (gender !== 'both') {
+        filter.gender = gender;
+      }
+
+      console.log(filter, 'filtering');
+
+      const findUsers = await User.find(filter);
+      console.log(findUsers, 'findusers');
+      if (findUsers?.length > 0) {
+        res.status(200).json({
+          status: 'success',
+          userCode: '200',
+          users: findUsers,
+          message: 'filter users fetched successfully',
+        });
+      } else {
+        res.status(200).json({
+          status: 'not found',
+          userCode: '404',
+          userMessage: 'No users found',
+          users: [],
+        });
+      }
+    }
   } catch (err) {
     console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Oops! Something went wrong while fetchig users.',
+    });
   }
 };
 
@@ -74,15 +176,15 @@ export const updateUserController = async (req, res) => {
       status: 'success',
       code: '200',
       user: updatedUser,
-      message: 'User record updated',
+      message: 'Record updated successfully',
     });
   } catch (err) {
     console.log(err);
   }
 };
 
-export const updateUserPhotoController = async (req, res) => {
-  console.log('req, res');
+export const updateUserProfilePhotoController = async (req, res) => {
+  console.log(req.file, 'des, res');
   const {
     query: {profile},
     user,
@@ -91,67 +193,101 @@ export const updateUserPhotoController = async (req, res) => {
   } = req;
 
   try {
-    if (profile) {
-      const userPhoto = await cloudImageRemoval(user.profilePhoto.id);
-      if (!userPhoto) {
-        return res.status(500).json({message: 'upload failed'});
-      }
-      const fileUploadResult = await cloudImageUploader(file.path);
-      const photo = {
-        url: fileUploadResult.secure_url,
-        id: fileUploadResult.public_id,
-      };
-      user.profilePhoto = photo;
-      const theUser = await user.save();
-      console.log(theUser, 'updateduser');
-      res.status(200).json({
-        status: 'success',
-        code: '200',
-        user: updatedUser,
-        message: 'User record updated',
-      });
+    const removePhotoRes = await cloudImageRemoval(user.profilePhoto.id);
+    console.log(removePhotoRes, 'photoddd');
+    if (removePhotoRes?.result !== 'ok') {
+      return res.status(500).json({message: 'upload failed'});
     }
     const fileUploadResult = await cloudImageUploader(file.path);
-    // if (!fileUploadResult || !fileUploadResult.secure_url) {
-    //     return res.status(500).json({ message: 'File upload failed' });
-    //   }
+    console.log(fileUploadResult, 'filoooo');
+    const photo = {
+      url: fileUploadResult.secure_url,
+      id: fileUploadResult.public_id,
+    };
+    user.profilePhoto = photo;
+    const theUser = await user.save();
+    console.log(theUser, 'updateduser');
+    return res.status(200).json({
+      status: 'success',
+      code: '200',
+      user: theUser,
+      message: 'Profile photo updated',
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
+  }
+};
+
+export const updateUserOtherPhotosController = async (req, res) => {
+  console.log(req.file, 'req, res');
+  const {
+    query: {profile},
+    user,
+    body,
+    file,
+  } = req;
+
+  try {
+    const fileUploadResult = await cloudImageUploader(file.path);
+
     const photo = {
       url: fileUploadResult.secure_url,
       id: fileUploadResult.public_id,
     };
 
-    user.otherPhotos.push(photo);
+    user.otherPhotos.unshift(photo);
 
     const theUser = await user.save();
     console.log(theUser, 'updateduser');
     res.status(200).json({
       status: 'success',
       code: '200',
-      user: updatedUser,
-      message: 'User record updated',
+      user: theUser,
+      message: 'Record updated successfully',
     });
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Oops! An error occurred',
+      error: err,
+    });
   }
 };
 
 export const deleteUserPhotoController = async (req, res) => {
-  console.log('req, res');
+  console.log(req.body, 'req, res');
 
   const {
-    params: {_id},
-    query: {photoId},
+    params: {id},
+    query: {photoIds},
     user,
+    body: {item},
   } = req;
-  console.log(_id, 'idss');
+  console.log(item, 'idss');
   try {
-    user.otherPhotos.filter(photo => photo.id !== photoId);
-
-    await cloudImageRemoval(photoId);
-    await user.save();
-    res.status(200).send('User deleted');
+    user.otherPhotos = user.otherPhotos.filter(photo => photo.id !== item);
+    await cloudImageRemoval(item);
+    const updatedUser = await user.save();
+    console.log(updatedUser, 'theuserUpdated');
+    res.status(200).json({
+      message: 'Photo deleted',
+      code: '200',
+      status: 'success',
+      user: updatedUser,
+    });
   } catch (err) {
     console.log(err);
+    res
+      .status(500)
+      .json({message: 'Internal server error', code: '500', status: 'eror'});
   }
 };
 
@@ -160,7 +296,6 @@ export const blockUserController = async (req, res) => {
 
   const {
     params: {_id},
-
     user,
   } = req;
   console.log(_id, 'idss');
@@ -184,7 +319,6 @@ export const unBlockUserController = async (req, res) => {
 
   const {
     params: {_id},
-
     user,
   } = req;
   console.log(_id, 'idss');
@@ -207,22 +341,40 @@ export const userFavouritesController = async (req, res) => {
   console.log('req, res');
 
   const {
-    params: {_id},
-
+    params: {id},
     user,
+    body,
   } = req;
-  console.log(_id, 'idss');
+  console.log(id, 'idss', body.user);
+
   try {
-    user.favouritesList.push(user);
-    const theUser = await user.save();
-    res.status(200).json({
+    if (!user.favourites.includes(body.user)) {
+      user.favourites.push(body.user);
+      const theUser = await user.save();
+      return res.status(200).json({
+        status: 'success',
+        code: '200',
+        user: theUser,
+        message: 'Added to favorites.',
+      });
+    }
+
+    user.favourites = user.favourites.filter(favUser => favUser !== body.user);
+    await user.save();
+    return res.status(200).json({
       status: 'success',
       code: '200',
-      user: theUser,
-      message: 'successfully added to favourites list',
+      user: user,
+      message: 'Removed from favorites.',
     });
   } catch (err) {
     console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      error: err.message,
+      code: '500',
+      message: 'Internal server error',
+    });
   }
 };
 
@@ -231,7 +383,6 @@ export const removeUserFromFavouritesController = async (req, res) => {
 
   const {
     params: {_id},
-
     user,
   } = req;
   console.log(_id, 'idss');
@@ -250,24 +401,78 @@ export const removeUserFromFavouritesController = async (req, res) => {
 };
 
 export const reportUserController = async (req, res) => {
-  console.log('req, res');
-
   const {
-    params: {_id},
-
+    params: {id},
     user,
+    body,
   } = req;
-  console.log(_id, 'idss');
+
   try {
-    user.reports.push(user);
+    const isAlreadyReported = await user.reports.find(
+      report => report._id === body._id,
+    );
+    console.log(isAlreadyReported, 'repoo');
+    if (isAlreadyReported) {
+      return res.status(400).json({
+        status: 'reported',
+        code: '400',
+        message: 'Your already reported this user',
+      });
+    }
+    user.reports.push(body);
     const theUser = await user.save();
     res.status(200).json({
       status: 'success',
       code: '200',
-      user: theUser,
-      message: 'successfully removed from favourites list',
+      user: theUser.username,
+      message: 'Your report was successful',
     });
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      error: err.message,
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};
+
+export const searchForUserController = async (req, res) => {
+  console.log('req, res');
+
+  const {
+    params: {id},
+    query: {query},
+    user,
+  } = req;
+  console.log(id, query, 'idss');
+  try {
+    const searchUser = await User.find({
+      username: {$regex: query, $options: 'i'}, // Example: Case-insensitive name search
+    });
+    console.log(searchUser, 'searcherr');
+    if (searchUser.length > 0) {
+      res.status(200).json({
+        status: 'success',
+        code: '200',
+        items: searchUser,
+        message: 'user found',
+      });
+    } else {
+      res.status(404).json({
+        status: 'invalid',
+        code: '404',
+        message: 'No user found',
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      status: 'error',
+      error: err.message,
+      code: '500',
+      message: 'Internal server error',
+    });
   }
 };

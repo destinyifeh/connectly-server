@@ -11,6 +11,7 @@ const UserSchema = new Schema({
   },
   password: String,
   dob: String,
+  age: String,
   phone: String,
   state: String,
   country: String,
