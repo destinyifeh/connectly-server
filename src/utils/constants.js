@@ -11,3 +11,6 @@ export const prod_env = env === 'production';
 export const SERVER_BASE_URL = dev_env
   ? 'http://localhost:4000'
   : 'https://google.com';
+
+export const NOTIFICATION_SENDER_URL =
+  'https://api.expo.dev/v2/push/send?useFcmV1=true';

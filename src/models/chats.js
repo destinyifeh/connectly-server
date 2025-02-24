@@ -3,11 +3,13 @@ import {model, Schema} from 'mongoose';
 const ChatSchema = new Schema({
   text: {
     type: String,
-    required: true,
+    required: false,
   },
   // _id: String,
-  receiverId: {type: String, required: true},
-  senderId: {type: String, required: true},
+  senderId: {type: Schema.Types.ObjectId, ref: 'User'},
+  receiverId: {type: Schema.Types.ObjectId, ref: 'User'},
+  //receiverId: {type: String, required: true},
+  //senderId: {type: String, required: true},
   image: {
     type: String,
     required: false,
@@ -24,7 +26,15 @@ const ChatSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  pending: {
+    type: Boolean,
+    default: false,
+  },
   received: {
+    type: Boolean,
+    default: false,
+  },
+  isViewed: {
     type: Boolean,
     default: false,
   },

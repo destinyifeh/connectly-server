@@ -36,6 +36,7 @@ const UserSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  pushTokens: {type: [String], default: []},
   verifyToken: String,
   verifyTokenExpires: Date,
   createdAt: {type: Date, default: Date.now},

@@ -57,5 +57,10 @@ router.get(
   verifyUser,
   controllers.searchForUserController,
 );
+router.post(
+  '/api/v1/user/push-token/:id',
+  verifyUser,
+  controllers.saveUserPushNotificationToken,
+);
 
 export default router;

@@ -476,3 +476,42 @@ export const searchForUserController = async (req, res) => {
     });
   }
 };
+
+export const saveUserPushNotificationToken = async (req, res) => {
+  const {
+    params: {id},
+    body: {token},
+    user,
+  } = req;
+
+  try {
+    console.log(user, 'userrr');
+    console.log(token, 'push token');
+    if (user.pushTokens.includes(token)) {
+      return res.status(200).json({
+        status: 'success',
+        code: '200',
+
+        message: 'Token already exist',
+      });
+    }
+
+    user.pushTokens.push(token);
+    const saveUser = await user.save();
+
+    return res.status(200).json({
+      status: 'success',
+      code: '200',
+      user: saveUser,
+      message: 'Token saved',
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      status: 'error',
+      error: err.message,
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};

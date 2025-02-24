@@ -1,0 +1,100 @@
+import mongoose from 'mongoose';
+import {Notification} from '../models/notifications.js';
+
+export const addNotification = async (req, res) => {
+  try {
+    const {body} = req;
+    console.log(body, 'ote body');
+
+    const notification = Notification.create(body);
+    res.status(200).json({
+      code: '200',
+      message: 'Notification sent',
+      status: 'success',
+      notification: notification,
+    });
+  } catch (err) {
+    console.log(err, 'err');
+    res.status(500).json({
+      error: err,
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};
+
+export const getMyNotifications = async (req, res) => {
+  try {
+    const {
+      params: {id},
+    } = req;
+    console.log(id, 'parmss');
+
+    const to = new mongoose.Types.ObjectId(String(id));
+
+    const notifications = Notification.find({to: to})
+      .sort({createdAt: -1})
+      .populate('to')
+      .populate('from');
+    console.log(notifications, 'notifications');
+    if (notifications && notifications.length > 0) {
+      return res.status(200).json({
+        notifications: notifications,
+        mssage: 'Notifications fetched successfully',
+        code: '200',
+        status: 'success',
+      });
+    }
+    return res.status(200).json({
+      notifications: [],
+      notificationMessage: 'Notifications Empty',
+      notificationCode: '404',
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err);
+    console.log(err, 'err');
+    res.status(500).json({
+      error: err,
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};
+
+export const updateViewedNotification = async (req, res) => {
+  try {
+    const {
+      params: {id},
+    } = req;
+    console.log(id, 'bod');
+    const to = new mongoose.Types.ObjectId(String(id));
+    const result = await Notification.updateMany(
+      {to: to}, // Filter notifications by userId
+      {$set: {isRead: true}}, // Set isRead to true
+    );
+    console.log(result, 'result...');
+    if (result.nModified === 0) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No unread notifications found for this user.',
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'All notifications marked as read.',
+      data: result,
+    });
+  } catch (err) {
+    console.log(err, 'err');
+    res.status(500).json({
+      error: err,
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};

@@ -1,11 +1,11 @@
 import {model, Schema, SchemaTypes} from 'mongoose';
 
 const NotificationSchema = new Schema({
-  sender: {
+  from: {
     type: SchemaTypes.ObjectId,
     ref: 'User',
   },
-  receiver: {
+  to: {
     type: SchemaTypes.ObjectId,
     ref: 'User',
   },
@@ -13,7 +13,6 @@ const NotificationSchema = new Schema({
   body: String,
 
   isRead: {type: Boolean, default: false},
-  seen: {type: Boolean, default: false},
 
   createdAt: {type: Date, default: Date.now},
 });
