@@ -2,6 +2,7 @@ import {Server} from 'socket.io';
 import {sendPushNotification} from '../../configs/push-notification.config.js';
 import {Chat} from '../../models/chats.js';
 import {User} from '../../models/users.js';
+import {capitalizeFirstLetter} from '../helpers.js';
 const userSockets = {}; // Store user socket connections
 
 const initializeSocket = server => {
@@ -50,8 +51,8 @@ const initializeSocket = server => {
           io.to(receiverSocketId).emit('newMessage', savedMessage);
           console.log(`Message sent to user ${messageData.receiverId}`);
           sendPushNotification(
-            messageData.receiverId,
-            messageData.user.name,
+            messageData,
+            capitalizeFirstLetter(messageData.user.name),
             messageData.text,
           );
         } else {
@@ -59,8 +60,8 @@ const initializeSocket = server => {
             `User ${messageData.receiverId} is offline. Message saved.`,
           );
           sendPushNotification(
-            messageData.receiverId,
-            messageData.user.name,
+            messageData,
+            capitalizeFirstLetter(messageData.user.name),
             messageData.text,
           );
         }

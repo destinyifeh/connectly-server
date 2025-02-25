@@ -21,4 +21,9 @@ router.put(
   notificationControllers.updateViewedNotification,
 );
 
+router.get(
+  '/api/v1/user/notifications-count/:id',
+  verifyUser,
+  notificationControllers.countMyUnreadNotifications,
+);
 export default router;

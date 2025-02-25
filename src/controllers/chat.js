@@ -19,7 +19,7 @@ export const getChats = async (req, res) => {
         {senderId: receiverObjectId, receiverId: senderObjectId},
       ],
     }).sort({createdAt: -1}); // Sort by time
-    console.log(chats, 'chatsss');
+    // console.log(chats, 'chatsss');
     if (chats.length > 0) {
       return res.status(200).json({
         chats: chats,
@@ -155,7 +155,7 @@ export const getMyChats = async (req, res) => {
       },
     ]);
 
-    console.log(chats, 'chatsss');
+    // console.log(chats, 'chatsss');
 
     if (chats.length > 0) {
       return res.status(200).json({
@@ -185,21 +185,66 @@ export const getMyChats = async (req, res) => {
 export const updateViewedChat = async (req, res) => {
   try {
     const {
-      body: {chatId},
+      body: {senderId, receiverId},
     } = req;
-    console.log(chatId, 'idss');
 
-    const chat = await Chat.findByIdAndUpdate(
-      chatId,
+    // const chat = await Chat.findByIdAndUpdate(
+    //   chatId,
+    //   {
+    //     isViewed: true,
+    //     received: true,
+    //     i,
+    //   },
+    //   {new: true},
+    // );
+
+    const receiverObjectId = new mongoose.Types.ObjectId(String(receiverId));
+    const senderObjectId = new mongoose.Types.ObjectId(String(senderId));
+
+    const chat = await Chat.updateMany(
       {
-        isViewed: true,
-        received: true,
+        $or: [
+          {senderId: receiverObjectId, receiverId: senderObjectId},
+          {senderId: senderObjectId, receiverId: receiverObjectId},
+        ],
       },
-      {new: true},
+      {
+        $set: {received: true},
+      },
     );
+
     console.log(chat, 'updated chat');
     return res.status(200).json({
       chats: chat,
+      mssage: 'chat updated successfully',
+      code: '200',
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err, 'err');
+    res.status(500).json({
+      error: err,
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};
+
+export const createChat = async (req, res) => {
+  try {
+    const {body} = req;
+    console.log(body, 'my bodyy');
+    const savedMessage = await Chat.create({
+      ...body,
+      _id: undefined,
+      sent: true,
+      pending: false,
+    });
+    console.log(savedMessage, 'saved db');
+
+    return res.status(200).json({
+      chats: savedMessage,
       mssage: 'chat updated successfully',
       code: '200',
       status: 'success',

@@ -12,5 +12,5 @@ router.get(
 
 router.get('/api/v1/user/mychats/:id', verifyUser, chatControllers.getMyChats);
 router.put('/api/v1/user/chat/viewed', chatControllers.updateViewedChat);
-
+router.post('/api/v1/user/chat/create', chatControllers.createChat);
 export default router;

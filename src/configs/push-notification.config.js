@@ -3,16 +3,20 @@ import {User} from '../models/users.js';
 import {NOTIFICATION_SENDER_URL} from '../utils/constants.js';
 
 export const sendPushNotification = async (
-  userId,
+  data,
   title,
   body,
   extraData = {},
 ) => {
+  const userId = data?.receiverId;
   const objectId = new mongoose.Types.ObjectId(String(userId));
+  const senderObjectId = new mongoose.Types.ObjectId(String(data.senderId));
   try {
-    console.log(userId, 'userid');
+    console.log(userId, 'userid', senderObjectId);
     const user = await User.findById(objectId);
+    const theSender = await User.findById(senderObjectId);
     console.log(user, 'user me');
+    console.log(theSender, 'user sender');
     if (!user || !user.pushTokens || user.pushTokens.length === 0) {
       console.log('No push tokens found for user');
       return;
@@ -24,24 +28,32 @@ export const sendPushNotification = async (
       title,
       body,
       data: {
-        url: '/dashboard/user-notification',
+        url: '/dashboard/chat',
+        sender: {
+          name: data.user.name,
+          _id: data.user._id,
+          senderId: data?.senderId,
+          info: {
+            profilePhoto: theSender.profilePhoto,
+            isOnline: theSender.isOnline,
+            _id: theSender._id,
+            dob: theSender.dob,
+            username: theSender.username,
+            isFromMychats: true,
+            senderId: theSender._id,
+            receiverId: user._id,
+          },
+        },
+        receiver: {
+          receiverId: userId,
+          name: user.username,
+        },
         ...extraData,
       },
+      categoryId: 'message',
     }));
 
     console.log(message, 'my message');
-
-    // const message = {
-    //   to: user.pushToken, // The recipient's Expo push token (retrieved and stored from the client)
-    //   sound: 'default',
-    //   title: 'Your Notification Title',
-    //   body: 'This is the content of your notification.',
-    //   data: {
-    //     extraData: 'Some extra data',
-
-    //     url: '/dashboard/notification',
-    //   },
-    // };
 
     const response = await fetch(NOTIFICATION_SENDER_URL, {
       method: 'POST',
@@ -52,8 +64,8 @@ export const sendPushNotification = async (
       },
       body: JSON.stringify(message),
     });
-    const data = await response.json();
-    console.log('Push notification response:', data);
+    const res = await response.json();
+    console.log('Push notification response:', res);
   } catch (error) {
     console.error('Error sending push notification:', error);
   }

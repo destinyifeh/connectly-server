@@ -6,7 +6,7 @@ export const addNotification = async (req, res) => {
     const {body} = req;
     console.log(body, 'ote body');
 
-    const notification = Notification.create(body);
+    const notification = await Notification.create(body);
     res.status(200).json({
       code: '200',
       message: 'Notification sent',
@@ -33,12 +33,12 @@ export const getMyNotifications = async (req, res) => {
 
     const to = new mongoose.Types.ObjectId(String(id));
 
-    const notifications = Notification.find({to: to})
+    const notifications = await Notification.find({to: to})
       .sort({createdAt: -1})
       .populate('to')
       .populate('from');
     console.log(notifications, 'notifications');
-    if (notifications && notifications.length > 0) {
+    if (notifications.length > 0) {
       return res.status(200).json({
         notifications: notifications,
         mssage: 'Notifications fetched successfully',
@@ -48,7 +48,7 @@ export const getMyNotifications = async (req, res) => {
     }
     return res.status(200).json({
       notifications: [],
-      notificationMessage: 'Notifications Empty',
+      notificationMessage: 'No notification yet!',
       notificationCode: '404',
       status: 'success',
     });
@@ -89,6 +89,46 @@ export const updateViewedNotification = async (req, res) => {
       data: result,
     });
   } catch (err) {
+    console.log(err, 'err');
+    res.status(500).json({
+      error: err,
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};
+
+export const countMyUnreadNotifications = async (req, res) => {
+  try {
+    const {
+      params: {id},
+    } = req;
+    console.log(id, 'parmss');
+
+    const to = new mongoose.Types.ObjectId(String(id));
+
+    const notifications = await Notification.find({to: to, isRead: false}).sort(
+      {createdAt: -1},
+    );
+
+    console.log(notifications, 'notifications');
+    if (notifications.length > 0) {
+      return res.status(200).json({
+        countNotifications: notifications,
+        mssage: 'Notifications counted successfully',
+        code: '200',
+        status: 'success',
+        notificationCount: notifications.length,
+      });
+    }
+    return res.status(200).json({
+      notificationMessage: 'No unread notification!',
+      notificationCode: '404',
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err);
     console.log(err, 'err');
     res.status(500).json({
       error: err,
