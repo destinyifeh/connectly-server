@@ -8,5 +8,3 @@ export const initializeDB = () => {
     .then(() => console.log(`DB connected on ${mongoURI}`))
     .catch(err => console.log(err.message, 'DB error'));
 };
-
-//Y2neytLTFnLPRnv2
