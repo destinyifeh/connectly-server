@@ -1,5 +1,4 @@
 import multer from 'multer';
-import path from 'path';
 const allowedImages = ['image/jpeg', 'image/jpg', 'image/png'];
 function fileFilter(req, file, cb) {
   if (allowedImages.includes(file.mimetype)) {
@@ -9,19 +8,25 @@ function fileFilter(req, file, cb) {
   }
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join('../public', 'uploads'));
-  },
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, path.join('../public', 'uploads'));
+//   },
 
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    cb(null, `${timestamp}-${file.originalname}`);
-  },
-});
+//   filename: (req, file, cb) => {
+//     const timestamp = Date.now();
+//     cb(null, `${timestamp}-${file.originalname}`);
+//   },
+// });
+
+// const upload = multer({
+//   storage: storage,
+//   limits: {fileSize: 1000000}, // 1 MB limit
+//   fileFilter: fileFilter,
+// });
 
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {fileSize: 1000000}, // 1 MB limit
   fileFilter: fileFilter,
 });
