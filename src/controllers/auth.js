@@ -13,10 +13,9 @@ import {
   generateTokenEngine,
 } from '../utils/helpers.js';
 export const loginController = async (req, res, next) => {
-  console.log(req.body, 'bodyy');
   try {
     const result = validationResult(req);
-    console.log(result, 'login val result');
+
     if (!result.isEmpty()) {
       return res.status(400).json({
         error: result.array(),
@@ -61,11 +60,7 @@ export const loginController = async (req, res, next) => {
         }
         res.status(200).json({
           message: 'Login successful',
-          // user: {
-          //   id: user._id,
-          //   username: user.username,
-          //   email: user.email,
-          // },
+
           user: user,
           code: '200',
           status: 'success',
@@ -86,7 +81,7 @@ export const loginController = async (req, res, next) => {
 export const signupController = async (req, res) => {
   try {
     const result = validationResult(req);
-    console.log(result, 'login val result');
+
     if (!result.isEmpty()) {
       return res.status(400).json({
         error: result.array(),
@@ -97,11 +92,9 @@ export const signupController = async (req, res) => {
     }
 
     const {body, file} = req;
-    console.log(req.body, 'bodyyyy');
-    console.log(file, 'fileee');
 
     const findEmailVerifiedUser = await User.findOne({email: body.email});
-    console.log(findEmailVerifiedUser, 'findOne');
+
     if (findEmailVerifiedUser && !findEmailVerifiedUser.isEmailVerified) {
       let token = generateTokenEngine();
       findEmailVerifiedUser.verifyToken = token;
@@ -133,17 +126,16 @@ export const signupController = async (req, res) => {
         id: fileUploadResult.public_id,
       },
     };
-    console.log(userDoc, 'user doc');
 
     try {
       let saveUser = await User.create(userDoc);
-      console.log(saveUser, 'userr11');
+
       let token = generateTokenEngine();
       saveUser.verifyToken = token;
       saveUser.verifyTokenExpires = Date.now() + 3600000; //1 hour
       await emailTokenVerifierSender(saveUser);
       await saveUser.save();
-      console.log(saveUser, 'userr');
+
       res.status(200).json({
         status: 'success',
         code: '200',
@@ -171,9 +163,8 @@ export const signupController = async (req, res) => {
 export const forgotPasswordController = async (req, res) => {
   const {email} = req.body;
   const result = validationResult(req);
-  console.log(result, 'forgot val result');
+
   if (!result.isEmpty()) {
-    console.log('Sending error response...');
     return res.status(400).json({
       error: result.array(),
       message: 'Incomplete fields',
@@ -215,7 +206,7 @@ export const verifyPasswordResetTokenController = async (req, res) => {
   const {otp, email} = req.body;
   const token = otp;
   const result = validationResult(req);
-  console.log(result, 'token val result');
+
   if (!result.isEmpty()) {
     return res.status(400).json({
       error: result.array(),
@@ -231,13 +222,10 @@ export const verifyPasswordResetTokenController = async (req, res) => {
       verifyTokenExpires: {$gt: Date.now()},
     });
     if (user) {
-      let resetPasswordToken = token;
-      console.log(resetPasswordToken);
       return res
         .status(200)
         .json({message: 'Token is valid', status: 'success', code: '200'});
     } else {
-      console.log('Password reset token is invalid or has expired');
       return res.status(400).json({
         message: 'Password reset token is invalid or has expired',
         code: '400',
@@ -255,7 +243,7 @@ export const verifyPasswordResetTokenController = async (req, res) => {
 export const userNewPasswordController = async (req, res) => {
   const {password, email} = req.body;
   const result = validationResult(req);
-  console.log(result, 'reset val result');
+
   if (!result.isEmpty()) {
     return res.status(400).json({
       error: result.array(),
@@ -265,8 +253,6 @@ export const userNewPasswordController = async (req, res) => {
     });
   }
   try {
-    console.log(req.body);
-
     let user = await User.findOne({
       email: email,
       verifyTokenExpires: {$gt: Date.now()},
@@ -276,7 +262,7 @@ export const userNewPasswordController = async (req, res) => {
         password,
         user.password,
       );
-      console.log(compareUserPassword, 'compare user');
+
       if (compareUserPassword === true) {
         return res.status(401).json({
           message: 'Old password and new password must not be the same',
@@ -318,7 +304,7 @@ export const verifyTokenController = async (req, res) => {
   const {otp, email} = req.body;
   const token = otp;
   const result = validationResult(req);
-  console.log(result, 'token val result');
+
   if (!result.isEmpty()) {
     return res.status(400).json({
       error: result.array(),
@@ -334,7 +320,7 @@ export const verifyTokenController = async (req, res) => {
     });
     if (user) {
       let verifyToken = token;
-      console.log(verifyToken);
+      console.log(verifyToken, 'verify token');
       user.verifyToken = undefined;
       user.verifyTokenExpires = undefined;
       user.isEmailVerified = true;
@@ -346,7 +332,6 @@ export const verifyTokenController = async (req, res) => {
         code: '200',
       });
     } else {
-      console.log('Email verification token is invalid or has expired');
       return res.status(401).json({
         message: 'Email verification token is invalid or has expired',
         code: 401,
@@ -367,7 +352,7 @@ export const verifyTokenController = async (req, res) => {
 export const resendVerificationTokenController = async (req, res) => {
   try {
     const result = validationResult(req);
-    console.log(result, 'resend val result');
+
     if (!result.isEmpty()) {
       return res.status(400).json({
         error: result.array(),
@@ -410,7 +395,7 @@ export const resendVerificationTokenController = async (req, res) => {
 
 export const changePasswordController = async (req, res) => {
   const result = validationResult(req);
-  console.log(result, 'change val result');
+
   if (!result.isEmpty()) {
     return res.status(400).json({
       error: result.array(),
@@ -425,10 +410,9 @@ export const changePasswordController = async (req, res) => {
     user,
   } = req;
 
-  console.log(password, 'passser');
   try {
     const compareUserPassword = await comparePassword(password, user.password);
-    console.log(compareUserPassword, 'compare user');
+
     if (compareUserPassword === true) {
       return res.status(401).json({
         message: 'New password must be different from the old one.',
@@ -446,6 +430,84 @@ export const changePasswordController = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
+  }
+};
+
+export const googleAuthController = async (req, res) => {
+  try {
+    const {body} = req;
+
+    const userDoc = {
+      isEmailVerified: true,
+      username: body.givenName,
+      country: body.country,
+      city: body.city,
+      state: body.state,
+      dob: body.dob,
+      email: body.email,
+      age: body.age,
+      gender: body.gender,
+      hobbies: body.hobbies,
+      password: body.id,
+      profilePhoto: {
+        url: body.photo,
+      },
+      isGoogleAuthUser: true,
+    };
+
+    const user = await User.create(userDoc);
+
+    await emailSuccessSignupSender(body);
+    return res.status(200).json({
+      message: 'Welcome to Connectly!',
+      user: user,
+      code: '200',
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err, 'g auth err');
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
+  }
+};
+
+export const validateGoogleAuthUserController = async (req, res) => {
+  try {
+    const {
+      body: {email},
+    } = req;
+
+    const user = await User.findOne({email});
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({message: 'User not found', code: '404', status: 'not-found'});
+    } else if (user && !user.isGoogleAuthUser) {
+      return res.status(409).json({
+        message: 'Email already exists. Please log in instead.',
+        code: '409',
+        status: 'notGoogleAuthUser',
+      });
+    }
+    return res.status(200).json({
+      message: 'User found',
+      code: '200',
+      user: user,
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err, 'g auth err');
     res.status(500).json({
       status: 'error',
       code: '500',

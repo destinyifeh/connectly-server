@@ -9,7 +9,7 @@ export default passport.use(
     async (email, password, done) => {
       try {
         const findUser = await User.findOne({email});
-        console.log(findUser, 'finddd');
+        console.log(findUser, 'findLoginUser');
         if (!findUser) {
           return done(null, false, {message: 'User not found'});
         }

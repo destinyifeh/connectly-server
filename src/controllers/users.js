@@ -10,14 +10,13 @@ export const getUsersController = async (req, res) => {
     query: {query, minAge, maxAge, gender},
     user,
   } = req;
-  console.log(id, 'ide', user);
-  console.log(query, 'queriess');
+
   try {
     if (query === 'foryou') {
       const users = await User.find({isActive: true, _id: {$ne: id}}).sort({
         createdAt: -1,
       });
-      console.log(users, 'users');
+
       if (users?.length > 0) {
         return res.status(200).json({
           status: 'success',
@@ -40,7 +39,6 @@ export const getUsersController = async (req, res) => {
         _id: {$in: favList}, // Use $in to find users whose _id is in favList
       }).sort({createdAt: -1});
 
-      console.log(users, 'fav users');
       if (users?.length > 0) {
         return res.status(200).json({
           status: 'success',
@@ -65,7 +63,7 @@ export const getUsersController = async (req, res) => {
       }).sort({
         createdAt: -1,
       });
-      console.log(users, 'users nearby');
+
       if (users?.length > 0) {
         return res.status(200).json({
           status: 'success',
@@ -91,10 +89,8 @@ export const getUsersController = async (req, res) => {
         filter.gender = gender;
       }
 
-      console.log(filter, 'filtering');
-
       const findUsers = await User.find(filter);
-      console.log(findUsers, 'findusers');
+
       if (findUsers?.length > 0) {
         res.status(200).json({
           status: 'success',
@@ -123,12 +119,12 @@ export const getUsersController = async (req, res) => {
 
 export const getCurrentUserController = async (req, res) => {
   const {
-    params: {_id},
+    params: {id},
     user,
   } = req;
   try {
-    const user = await User.findById(_id);
-    console.log(user, 'user');
+    const user = await User.findById(id);
+
     res.status(200).json({
       status: 'success',
       code: '200',
@@ -137,40 +133,50 @@ export const getCurrentUserController = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };
 
 export const deleteUserController = async (req, res) => {
-  console.log('req, res');
-
   const {
-    params: {_id},
+    params: {id},
     user,
+    body: {userId},
   } = req;
-  console.log(_id, 'idss');
+  id, 'idss', userId;
   try {
     const photoIds = user.otherPhotos?.map(photo => photo.id) ?? [];
-    const userPhotos = [user?.profilePhoto, ...photoIds];
+    const userPhotos = [user?.profilePhoto.id, ...photoIds];
 
-    //const userPhotos = ['deee/zvd7lyyxfetdwxs7jkse', ...dee];
+    console.log(userPhotos, 'my photos idds');
     await cloudImageRemoval(userPhotos, isMany);
-    await User.findByIdAndDelete(user._id);
+    await User.findByIdAndDelete(id);
     res.status(200).send('User deleted');
   } catch (err) {
     console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      error: err.message,
+      code: '500',
+      message: 'Internal server error',
+    });
   }
 };
 
 export const updateUserController = async (req, res) => {
-  console.log('req, res');
   const {
-    params: {_id},
+    params: {id},
     user,
     body,
   } = req;
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(_id, body, {new: true});
+    const updatedUser = await User.findByIdAndUpdate(id, body, {new: true});
     console.log(updatedUser, 'updateduser');
     res.status(200).json({
       status: 'success',
@@ -180,11 +186,16 @@ export const updateUserController = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
   }
 };
 
 export const updateUserProfilePhotoController = async (req, res) => {
-  console.log(req.file, 'des, res');
   const {
     query: {profile},
     user,
@@ -193,20 +204,22 @@ export const updateUserProfilePhotoController = async (req, res) => {
   } = req;
 
   try {
-    const removePhotoRes = await cloudImageRemoval(user.profilePhoto.id);
-    console.log(removePhotoRes, 'photoddd');
-    if (removePhotoRes?.result !== 'ok') {
-      return res.status(500).json({message: 'upload failed'});
+    if (user.profilePhoto?.id) {
+      const removePhotoRes = await cloudImageRemoval(user.profilePhoto.id);
+
+      if (removePhotoRes?.result !== 'ok') {
+        return res.status(500).json({message: 'upload failed'});
+      }
     }
     const fileUploadResult = await cloudImageUploader(file.path);
-    console.log(fileUploadResult, 'filoooo');
+
     const photo = {
       url: fileUploadResult.secure_url,
       id: fileUploadResult.public_id,
     };
     user.profilePhoto = photo;
     const theUser = await user.save();
-    console.log(theUser, 'updateduser');
+
     return res.status(200).json({
       status: 'success',
       code: '200',
@@ -225,7 +238,6 @@ export const updateUserProfilePhotoController = async (req, res) => {
 };
 
 export const updateUserOtherPhotosController = async (req, res) => {
-  console.log(req.file, 'req, res');
   const {
     query: {profile},
     user,
@@ -244,7 +256,7 @@ export const updateUserOtherPhotosController = async (req, res) => {
     user.otherPhotos.unshift(photo);
 
     const theUser = await user.save();
-    console.log(theUser, 'updateduser');
+
     res.status(200).json({
       status: 'success',
       code: '200',
@@ -263,20 +275,18 @@ export const updateUserOtherPhotosController = async (req, res) => {
 };
 
 export const deleteUserPhotoController = async (req, res) => {
-  console.log(req.body, 'req, res');
-
   const {
     params: {id},
     query: {photoIds},
     user,
     body: {item},
   } = req;
-  console.log(item, 'idss');
+
   try {
     user.otherPhotos = user.otherPhotos.filter(photo => photo.id !== item);
     await cloudImageRemoval(item);
     const updatedUser = await user.save();
-    console.log(updatedUser, 'theuserUpdated');
+
     res.status(200).json({
       message: 'Photo deleted',
       code: '200',
@@ -292,60 +302,49 @@ export const deleteUserPhotoController = async (req, res) => {
 };
 
 export const blockUserController = async (req, res) => {
-  console.log('req, res');
-
-  const {
-    params: {_id},
-    user,
-  } = req;
-  console.log(_id, 'idss');
-  try {
-    user.blackLists.push(user);
-
-    const theUser = await user.save();
-    res.status(200).json({
-      status: 'success',
-      code: '200',
-      user: theUser,
-      message: 'User blacklisted successfully',
-    });
-  } catch (err) {
-    console.log(err);
-  }
-};
-
-export const unBlockUserController = async (req, res) => {
-  console.log('req, res');
-
-  const {
-    params: {_id},
-    user,
-  } = req;
-  console.log(_id, 'idss');
-  try {
-    user.blackLists.filter(user => user._id !== _id);
-
-    const theUser = await user.save();
-    res.status(200).json({
-      status: 'success',
-      code: '200',
-      user: theUser,
-      message: 'User unblacklisted successfully',
-    });
-  } catch (err) {
-    console.log(err);
-  }
-};
-
-export const userFavouritesController = async (req, res) => {
-  console.log('req, res');
-
   const {
     params: {id},
     user,
     body,
   } = req;
-  console.log(id, 'idss', body.user);
+
+  try {
+    if (!user.blackLists.includes(body.user)) {
+      user.blackLists.push(body.user);
+      const theUser = await user.save();
+      return res.status(200).json({
+        status: 'success',
+        code: '200',
+        user: theUser,
+        message: 'Blocked.',
+      });
+    }
+
+    user.blackLists = user.blackLists.filter(bUser => bUser !== body.user);
+    await user.save();
+    return res.status(200).json({
+      status: 'success',
+      code: '200',
+      user: user,
+      message: 'Unblocked',
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      error: err.message,
+      code: '500',
+      message: 'Internal server error',
+    });
+  }
+};
+
+export const userFavouritesController = async (req, res) => {
+  const {
+    params: {id},
+    user,
+    body,
+  } = req;
 
   try {
     if (!user.favourites.includes(body.user)) {
@@ -378,28 +377,6 @@ export const userFavouritesController = async (req, res) => {
   }
 };
 
-export const removeUserFromFavouritesController = async (req, res) => {
-  console.log('req, res');
-
-  const {
-    params: {_id},
-    user,
-  } = req;
-  console.log(_id, 'idss');
-  try {
-    user.favouritesList.filter(user => user._id !== _id);
-    const theUser = await user.save();
-    res.status(200).json({
-      status: 'success',
-      code: '200',
-      user: theUser,
-      message: 'successfully removed from favourites list',
-    });
-  } catch (err) {
-    console.log(err);
-  }
-};
-
 export const reportUserController = async (req, res) => {
   const {
     params: {id},
@@ -411,7 +388,6 @@ export const reportUserController = async (req, res) => {
     const isAlreadyReported = await user.reports.find(
       report => report._id === body._id,
     );
-    console.log(isAlreadyReported, 'repoo');
     if (isAlreadyReported) {
       return res.status(400).json({
         status: 'reported',
@@ -439,19 +415,17 @@ export const reportUserController = async (req, res) => {
 };
 
 export const searchForUserController = async (req, res) => {
-  console.log('req, res');
-
   const {
     params: {id},
     query: {query},
     user,
   } = req;
-  console.log(id, query, 'idss');
+
   try {
     const searchUser = await User.find({
       username: {$regex: query, $options: 'i'}, // Example: Case-insensitive name search
     });
-    console.log(searchUser, 'searcherr');
+
     if (searchUser.length > 0) {
       res.status(200).json({
         status: 'success',
@@ -485,8 +459,6 @@ export const saveUserPushNotificationToken = async (req, res) => {
   } = req;
 
   try {
-    console.log(user, 'userrr');
-    console.log(token, 'push token');
     if (user.pushTokens.includes(token)) {
       return res.status(200).json({
         status: 'success',

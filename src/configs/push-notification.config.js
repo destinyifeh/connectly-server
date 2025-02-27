@@ -12,13 +12,11 @@ export const sendPushNotification = async (
   const objectId = new mongoose.Types.ObjectId(String(userId));
   const senderObjectId = new mongoose.Types.ObjectId(String(data.senderId));
   try {
-    console.log(userId, 'userid', senderObjectId);
     const user = await User.findById(objectId);
     const theSender = await User.findById(senderObjectId);
-    console.log(user, 'user me');
-    console.log(theSender, 'user sender');
+
     if (!user || !user.pushTokens || user.pushTokens.length === 0) {
-      console.log('No push tokens found for user');
+      //('No push tokens found for user');
       return;
     }
     // Prepare a message for each token
@@ -53,8 +51,6 @@ export const sendPushNotification = async (
       categoryId: 'message',
     }));
 
-    console.log(message, 'my message');
-
     const response = await fetch(NOTIFICATION_SENDER_URL, {
       method: 'POST',
       headers: {
@@ -65,7 +61,7 @@ export const sendPushNotification = async (
       body: JSON.stringify(message),
     });
     const res = await response.json();
-    console.log('Push notification response:', res);
+    //console.log('Push notification response:', res);
   } catch (error) {
     console.error('Error sending push notification:', error);
   }

@@ -20,7 +20,10 @@ const UserSchema = new Schema({
     url: String,
     id: String,
   },
-
+  isGoogleAuthUser: {
+    type: Boolean,
+    default: false,
+  },
   otherPhotos: Array,
   favourites: Array,
   reports: Array,

@@ -23,7 +23,7 @@ export const encryptPassword = async password => {
 };
 
 export function formatFilePath(filePath) {
-  console.log(filePath, 'filesss');
+  //(filePath, 'filesss');
 
   const formattedPath = filePath.replace(/^public\//, '');
 

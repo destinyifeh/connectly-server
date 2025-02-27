@@ -2,6 +2,7 @@ import {Router} from 'express';
 import controllers from '../controllers/index.js';
 import {verifyUser} from '../middlewares/auth.js';
 import upload from '../middlewares/image-uploader.js';
+import {limiter} from '../middlewares/rate-limit.js';
 import {
   changePasswordValidation,
   forgotValidation,
@@ -11,7 +12,12 @@ import {
 } from '../utils/validators/auth-validators.js';
 const router = Router();
 
-router.post('/api/v1/user/login', loginValidation, controllers.loginController);
+router.post(
+  '/api/v1/user/login',
+  limiter,
+  loginValidation,
+  controllers.loginController,
+);
 router.post(
   '/api/v1/user/signup',
   upload.single('profilePhoto'),
@@ -50,5 +56,12 @@ router.put(
   verifyUser,
   changePasswordValidation,
   controllers.changePasswordController,
+);
+
+router.post('/api/v1/user/google-auth', controllers.googleAuthController);
+
+router.post(
+  '/api/v1/user/validate-google-auth',
+  controllers.validateGoogleAuthUserController,
 );
 export default router;

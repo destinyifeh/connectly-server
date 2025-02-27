@@ -13,26 +13,48 @@ const initializeSocket = server => {
     },
   });
 
-  io.on('connection', socket => {
-    console.log('User connected:', socket.id);
+  // Middleware for authentication
+  io.use(async (socket, next) => {
+    try {
+      const userId = socket.handshake.auth.userId;
 
-    socket.on('userConnected', async userId => {
-      userSockets[userId] = socket.id;
-      console.log(`User ${userId} is online with socket ID ${socket.id}`);
-      // Notify the frontend that this user is online
-      io.emit('userStatus', {userId, isOnline: true});
-      try {
-        await User.findByIdAndUpdate(userId, {isOnline: true});
-      } catch (err) {
-        console.log(err, 'updating online status err');
+      // Validate the userId
+      if (!userId || typeof userId !== 'string') {
+        return next(new Error('Invalid user ID'));
       }
-    });
+
+      // Verify user existence in the database
+      const user = await User.findById(userId);
+      if (!user) {
+        return next(new Error('User not found'));
+      }
+
+      // Attach user information to the socket object
+      socket.userId = userId;
+      next();
+    } catch (error) {
+      console.error('Authentication error:', error);
+      next(new Error('Authentication error'));
+    }
+  });
+
+  io.on('connection', async socket => {
+    console.log('User connected:', socket.id);
+    const userId = socket.userId;
+    userSockets[userId] = socket.id;
+    console.log(`User ${userId} is online with socket ID ${socket.id}`);
+    // Notify the frontend that this user is online
+    io.emit('userStatus', {userId, isOnline: true});
+    try {
+      await User.findByIdAndUpdate(userId, {isOnline: true});
+    } catch (err) {
+      console.log(err, 'updating online status err');
+    }
 
     socket.on('sendMessage', async messageData => {
       console.log('Received message:', messageData);
 
       try {
-        // const savedMessage = await Chat.create(messageData);
         const savedMessage = await Chat.create({
           ...messageData,
           _id: undefined,
@@ -74,6 +96,7 @@ const initializeSocket = server => {
       console.log('istyping,,,');
       const receiverSocketId = userSockets[receiverId];
       if (receiverSocketId) {
+        console.log('istyping22,,,', receiverSocketId);
         // Emit a "typing" event to the receiver only
         io.to(receiverSocketId).emit('typing', {senderId, isTyping});
         console.log(
@@ -105,20 +128,13 @@ const initializeSocket = server => {
     });
 
     socket.on('disconnect', async () => {
-      for (let userId in userSockets) {
-        if (userSockets[userId] === socket.id) {
-          console.log(`User ${userId} disconnected`);
-          // Notify all clients that the user is offline
-          io.emit('userStatus', {userId, isOnline: false});
-          try {
-            await User.findByIdAndUpdate(userId, {isOnline: false});
-          } catch (err) {
-            console.log(err, 'updating online status err');
-          }
-
-          delete userSockets[userId];
-          break;
-        }
+      console.log(`User ${socket.userId} disconnected`);
+      io.emit('userStatus', {userId: socket.userId, isOnline: false});
+      delete userSockets[socket.userId];
+      try {
+        await User.findByIdAndUpdate(socket.userId, {isOnline: false});
+      } catch (err) {
+        console.error('Error updating online status:', err);
       }
     });
   });

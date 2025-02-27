@@ -4,7 +4,6 @@ import {Notification} from '../models/notifications.js';
 export const addNotification = async (req, res) => {
   try {
     const {body} = req;
-    console.log(body, 'ote body');
 
     const notification = await Notification.create(body);
     res.status(200).json({
@@ -29,7 +28,6 @@ export const getMyNotifications = async (req, res) => {
     const {
       params: {id},
     } = req;
-    console.log(id, 'parmss');
 
     const to = new mongoose.Types.ObjectId(String(id));
 
@@ -37,7 +35,7 @@ export const getMyNotifications = async (req, res) => {
       .sort({createdAt: -1})
       .populate('to')
       .populate('from');
-    console.log(notifications, 'notifications');
+
     if (notifications.length > 0) {
       return res.status(200).json({
         notifications: notifications,
@@ -54,7 +52,7 @@ export const getMyNotifications = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    console.log(err, 'err');
+
     res.status(500).json({
       error: err,
       status: 'error',
@@ -69,13 +67,13 @@ export const updateViewedNotification = async (req, res) => {
     const {
       params: {id},
     } = req;
-    console.log(id, 'bod');
+
     const to = new mongoose.Types.ObjectId(String(id));
     const result = await Notification.updateMany(
       {to: to}, // Filter notifications by userId
       {$set: {isRead: true}}, // Set isRead to true
     );
-    console.log(result, 'result...');
+
     if (result.nModified === 0) {
       return res.status(404).json({
         status: 'fail',
@@ -104,7 +102,6 @@ export const countMyUnreadNotifications = async (req, res) => {
     const {
       params: {id},
     } = req;
-    console.log(id, 'parmss');
 
     const to = new mongoose.Types.ObjectId(String(id));
 
@@ -112,7 +109,6 @@ export const countMyUnreadNotifications = async (req, res) => {
       {createdAt: -1},
     );
 
-    console.log(notifications, 'notifications');
     if (notifications.length > 0) {
       return res.status(200).json({
         countNotifications: notifications,
@@ -129,7 +125,7 @@ export const countMyUnreadNotifications = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    console.log(err, 'err');
+
     res.status(500).json({
       error: err,
       status: 'error',

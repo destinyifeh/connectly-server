@@ -10,9 +10,21 @@ router.get(
   verifyUser,
   controllers.getUsersController,
 );
-router.delete('/api/v1/user/delete/:id', controllers.deleteUserController);
-router.put('/api/v1/user/update/:id', controllers.updateUserController);
-router.get('/api/v1/user/:id', controllers.getCurrentUserController);
+router.delete(
+  '/api/v1/user/delete/:id',
+  verifyUser,
+  controllers.deleteUserController,
+);
+router.put(
+  '/api/v1/user/update/:id',
+  verifyUser,
+  controllers.updateUserController,
+);
+router.get(
+  '/api/v1/user/:id',
+  verifyUser,
+  controllers.getCurrentUserController,
+);
 router.delete(
   '/api/v1/user/photo-delete/:id',
   verifyUser,
@@ -31,20 +43,16 @@ router.put(
   controllers.updateUserProfilePhotoController,
 );
 
-router.put('/api/v1/user/block-user/:id', controllers.blockUserController);
-
-router.put('/api/v1/user/unblock-user/:id', controllers.unBlockUserController);
+router.put(
+  '/api/v1/user/block-user/:id',
+  verifyUser,
+  controllers.blockUserController,
+);
 
 router.put(
   '/api/v1/user/add-to-favourites/:id',
   verifyUser,
   controllers.userFavouritesController,
-);
-
-router.put(
-  '/api/v1/user/remove-from-favourites/:id',
-  verifyUser,
-  controllers.removeUserFromFavouritesController,
 );
 
 router.put(

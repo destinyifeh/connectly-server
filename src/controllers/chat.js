@@ -7,19 +7,17 @@ export const getChats = async (req, res) => {
       query: {query},
       user,
     } = req;
-    console.log(id, 'sender id');
-    console.log(receiverId, 'receiver id');
+
     const senderObjectId = new mongoose.Types.ObjectId(String(id));
     const receiverObjectId = new mongoose.Types.ObjectId(String(receiverId));
-    console.log(receiverObjectId, 'receiverobj id');
-    console.log(senderObjectId, 'sender obj id');
+
     const chats = await Chat.find({
       $or: [
         {senderId: senderObjectId, receiverId: receiverObjectId},
         {senderId: receiverObjectId, receiverId: senderObjectId},
       ],
     }).sort({createdAt: -1}); // Sort by time
-    // console.log(chats, 'chatsss');
+
     if (chats.length > 0) {
       return res.status(200).json({
         chats: chats,
@@ -51,15 +49,8 @@ export const getMyChats = async (req, res) => {
       user,
     } = req;
 
-    console.log(id, 'my idddd');
     const objectId = new mongoose.Types.ObjectId(String(id));
-    console.log(objectId, 'my idddd22');
-    // const chats = await Chat.find({
-    //   $or: [{senderId: objectId}, {receiverId: objectId}],
-    // })
-    //   .sort({createdAt: -1})
-    //   .populate('senderId', 'profilePhoto username')
-    //   .populate('receiverId', 'profilePhoto username');
+
     const chats = await Chat.aggregate([
       {
         $lookup: {
@@ -155,8 +146,6 @@ export const getMyChats = async (req, res) => {
       },
     ]);
 
-    // console.log(chats, 'chatsss');
-
     if (chats.length > 0) {
       return res.status(200).json({
         chats: chats,
@@ -188,16 +177,6 @@ export const updateViewedChat = async (req, res) => {
       body: {senderId, receiverId},
     } = req;
 
-    // const chat = await Chat.findByIdAndUpdate(
-    //   chatId,
-    //   {
-    //     isViewed: true,
-    //     received: true,
-    //     i,
-    //   },
-    //   {new: true},
-    // );
-
     const receiverObjectId = new mongoose.Types.ObjectId(String(receiverId));
     const senderObjectId = new mongoose.Types.ObjectId(String(senderId));
 
@@ -213,7 +192,6 @@ export const updateViewedChat = async (req, res) => {
       },
     );
 
-    console.log(chat, 'updated chat');
     return res.status(200).json({
       chats: chat,
       mssage: 'chat updated successfully',
@@ -234,14 +212,13 @@ export const updateViewedChat = async (req, res) => {
 export const createChat = async (req, res) => {
   try {
     const {body} = req;
-    console.log(body, 'my bodyy');
+
     const savedMessage = await Chat.create({
       ...body,
       _id: undefined,
       sent: true,
       pending: false,
     });
-    console.log(savedMessage, 'saved db');
 
     return res.status(200).json({
       chats: savedMessage,
