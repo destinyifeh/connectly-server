@@ -61,7 +61,7 @@ export const sendPushNotification = async (
       body: JSON.stringify(message),
     });
     const res = await response.json();
-    //console.log('Push notification response:', res);
+    console.log('Push notification response:', res);
   } catch (error) {
     console.error('Error sending push notification:', error);
   }
