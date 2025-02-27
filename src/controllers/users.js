@@ -148,13 +148,13 @@ export const deleteUserController = async (req, res) => {
     user,
     body: {userId},
   } = req;
-  id, 'idss', userId;
+
   try {
     const photoIds = user.otherPhotos?.map(photo => photo.id) ?? [];
     const userPhotos = [user?.profilePhoto.id, ...photoIds];
 
     console.log(userPhotos, 'my photos idds');
-    await cloudImageRemoval(userPhotos, isMany);
+    await cloudImageRemoval(userPhotos, true);
     await User.findByIdAndDelete(id);
     res.status(200).send('User deleted');
   } catch (err) {

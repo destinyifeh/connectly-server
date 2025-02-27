@@ -5,7 +5,7 @@ export const verifyUser = async (req, res, next) => {
   console.log(req.params, 'my verify params');
   try {
     const user = await User.findById(req.params.id);
-    console.log(user, 'user');
+    //console.log(user, 'user');
 
     if (!user) {
       return res

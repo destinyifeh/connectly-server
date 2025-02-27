@@ -1,4 +1,5 @@
 import {model, Schema} from 'mongoose';
+import {DOCUMENT_EXPIRATION_PERIOD} from '../utils/constants.js';
 
 const ChatSchema = new Schema({
   text: {
@@ -43,5 +44,10 @@ const ChatSchema = new Schema({
     default: Date.now,
   },
 });
+
+ChatSchema.index(
+  {createdAt: 1},
+  {expireAfterSeconds: DOCUMENT_EXPIRATION_PERIOD},
+);
 
 export const Chat = model('Chat', ChatSchema);

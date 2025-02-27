@@ -1,4 +1,5 @@
 import {model, Schema, SchemaTypes} from 'mongoose';
+import {DOCUMENT_EXPIRATION_PERIOD} from '../utils/constants.js';
 
 const NotificationSchema = new Schema({
   from: {
@@ -16,5 +17,10 @@ const NotificationSchema = new Schema({
 
   createdAt: {type: Date, default: Date.now},
 });
+
+NotificationSchema.index(
+  {createdAt: 1},
+  {expireAfterSeconds: DOCUMENT_EXPIRATION_PERIOD},
+);
 
 export const Notification = model('Notification', NotificationSchema);
