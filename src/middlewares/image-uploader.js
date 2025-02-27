@@ -8,25 +8,15 @@ function fileFilter(req, file, cb) {
   }
 }
 
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, path.join('../public', 'uploads'));
-//   },
-
-//   filename: (req, file, cb) => {
-//     const timestamp = Date.now();
-//     cb(null, `${timestamp}-${file.originalname}`);
-//   },
-// });
-
-// const upload = multer({
-//   storage: storage,
-//   limits: {fileSize: 1000000}, // 1 MB limit
-//   fileFilter: fileFilter,
-// });
+const storage = multer.diskStorage({
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    cb(null, `${timestamp}-${file.originalname}`);
+  },
+});
 
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: storage,
   limits: {fileSize: 1000000}, // 1 MB limit
   fileFilter: fileFilter,
 });
