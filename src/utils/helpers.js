@@ -58,13 +58,13 @@ export function capitalizeWords(str) {
 export const generateAccessToken = user => {
   return jwt.sign({userId: user._id}, process.env.SECRET_KEY, {
     //expiresIn: '15m',
-    expiresIn: '1m',
+    expiresIn: '8m',
   });
 };
 
 export const generateRefreshToken = user => {
   return jwt.sign({userId: user._id}, process.env.REFRESH_SECRET_KEY, {
     // expiresIn: '7d',
-    expiresIn: '3m',
+    expiresIn: '15m',
   });
 };
