@@ -509,9 +509,13 @@ export const googleAuthController = async (req, res) => {
     const user = await User.create(userDoc);
 
     await emailSuccessSignupSender(body);
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
     return res.status(200).json({
       message: 'Welcome to Connectly!',
       user: user,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
       code: '200',
       status: 'success',
     });
