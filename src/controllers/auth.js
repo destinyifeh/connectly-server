@@ -545,10 +545,15 @@ export const validateGoogleAuthUserController = async (req, res) => {
         status: 'notGoogleAuthUser',
       });
     }
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
     return res.status(200).json({
       message: 'User found',
       code: '200',
       user: user,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
       status: 'success',
     });
   } catch (err) {
