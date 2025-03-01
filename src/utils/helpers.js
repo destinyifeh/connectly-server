@@ -1,7 +1,10 @@
 import bcrypt from 'bcrypt';
+import env from 'dotenv';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 import path from 'path';
 import {SERVER_BASE_URL} from './constants.js';
+env.config();
 
 // Create a write stream for the log file (in append mode)
 export const logStream = fs.createWriteStream(
@@ -51,3 +54,17 @@ export function capitalizeWords(str) {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize the first letter of each word
     .join(' '); // Join the words back into a single string
 }
+
+export const generateAccessToken = user => {
+  return jwt.sign({userId: user._id}, process.env.SECRET_KEY, {
+    //expiresIn: '15m',
+    expiresIn: '1m',
+  });
+};
+
+export const generateRefreshToken = user => {
+  return jwt.sign({userId: user._id}, process.env.REFRESH_SECRET_KEY, {
+    // expiresIn: '7d',
+    expiresIn: '3m',
+  });
+};

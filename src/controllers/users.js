@@ -25,7 +25,8 @@ export const getUsersController = async (req, res) => {
           message: 'Users fetched succesfully',
         });
       }
-      return res.status(404).json({
+
+      return res.status(200).json({
         status: 'not found',
         userCode: '404',
         userMessage: 'No active users',

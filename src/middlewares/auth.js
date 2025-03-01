@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import {User} from '../models/users.js';
 
 export const verifyUser = async (req, res, next) => {
@@ -27,4 +28,27 @@ export const verifyUser = async (req, res, next) => {
       code: '500',
     });
   }
+};
+
+export const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  console.log(token, 'tokeeee');
+  if (!token) {
+    return res.status(401).json({message: 'Unauthorized: No token provided'});
+  }
+
+  jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
+    if (err) {
+      console.log(err, 'err token');
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({message: 'Unauthorized: Token expired'});
+      } else {
+        return res.status(403).json({message: 'Forbidden: Invalid token'});
+      }
+    }
+
+    req.user = user;
+    next();
+  });
 };

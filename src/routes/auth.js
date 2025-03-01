@@ -64,4 +64,6 @@ router.post(
   '/api/v1/user/validate-google-auth',
   controllers.validateGoogleAuthUserController,
 );
+
+router.post('/api/v1/user/refresh-token', controllers.refreshTokenController);
 export default router;

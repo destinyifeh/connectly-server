@@ -27,14 +27,24 @@ export const getMyNotifications = async (req, res) => {
   try {
     const {
       params: {id},
+      query: {page, limit},
     } = req;
+    console.log(page, limit, 'page-limit');
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 20;
+
+    const skip = (pageNumber - 1) * pageSize;
 
     const to = new mongoose.Types.ObjectId(String(id));
 
     const notifications = await Notification.find({to: to})
       .sort({createdAt: -1})
+      .skip(skip)
+      .limit(pageSize)
       .populate('to')
       .populate('from');
+
+    const totalNotifications = await Notification.countDocuments({to: to});
 
     if (notifications.length > 0) {
       return res.status(200).json({
@@ -42,6 +52,12 @@ export const getMyNotifications = async (req, res) => {
         mssage: 'Notifications fetched successfully',
         code: '200',
         status: 'success',
+        pagination: {
+          page: pageNumber,
+          limit: pageSize,
+          totalElements: totalNotifications,
+          totalPages: Math.ceil(totalNotifications / pageSize),
+        },
       });
     }
     return res.status(200).json({

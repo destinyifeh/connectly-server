@@ -1,12 +1,13 @@
 import {Router} from 'express';
 import controllers from '../controllers/index.js';
-import {verifyUser} from '../middlewares/auth.js';
+import {authenticateToken, verifyUser} from '../middlewares/auth.js';
 import upload from '../middlewares/image-uploader.js';
 
 const router = Router();
 
 router.get(
   '/api/v1/active-users/:id',
+  authenticateToken,
   verifyUser,
   controllers.getUsersController,
 );

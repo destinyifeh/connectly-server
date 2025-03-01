@@ -1,4 +1,6 @@
+import {config} from 'dotenv';
 import {validationResult} from 'express-validator';
+import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import {cloudImageUploader} from '../configs/cloud-uploader.config.js';
 import {
@@ -10,10 +12,18 @@ import {User} from '../models/users.js';
 import {
   comparePassword,
   encryptPassword,
+  generateAccessToken,
+  generateRefreshToken,
   generateTokenEngine,
 } from '../utils/helpers.js';
+config();
 export const loginController = async (req, res, next) => {
   try {
+    const {
+      body: {email, password},
+    } = req;
+
+    console.log(req.body, 'body-login');
     const result = validationResult(req);
 
     if (!result.isEmpty()) {
@@ -24,49 +34,84 @@ export const loginController = async (req, res, next) => {
         code: '400',
       });
     }
-    passport.authenticate('local', (err, user, info) => {
-      console.log(err, 'err');
-      console.log(info, 'info');
-      console.log(user, 'userrr');
-      if (info) {
-        return res.status(400).json({
-          message: info.message,
-          status: 'error',
-          code: '400',
-        });
-      }
-      if (err) {
-        console.log(err);
-        return res.status(500).json({
-          message: 'Authentication failed',
-          description: err,
-          status: 'error',
-          code: '500',
-        });
-      }
-      if (!user) {
-        return res
-          .status(401)
-          .json({message: 'Invalid credentials', status: 'error', code: '401'});
-      }
-      req.login(user, loginErr => {
-        if (loginErr) {
+    let allowLocalAuth = false;
+    if (allowLocalAuth) {
+      console.log('localAuth');
+      passport.authenticate('local', (err, user, info) => {
+        console.log(err, 'err');
+        console.log(info, 'info');
+        console.log(user, 'userrr');
+        if (info) {
+          return res.status(400).json({
+            message: info.message,
+            status: 'error',
+            code: '400',
+          });
+        }
+        if (err) {
+          console.log(err);
           return res.status(500).json({
-            error: 'Login failed',
-            message: loginErr.message,
+            message: 'Authentication failed',
+            description: err,
             status: 'error',
             code: '500',
           });
         }
-        res.status(200).json({
-          message: 'Login successful',
-
-          user: user,
-          code: '200',
-          status: 'success',
+        if (!user) {
+          return res.status(401).json({
+            message: 'Invalid credentials',
+            status: 'error',
+            code: '401',
+          });
+        }
+        req.login(user, loginErr => {
+          if (loginErr) {
+            return res.status(500).json({
+              error: 'Login failed',
+              message: loginErr.message,
+              status: 'error',
+              code: '500',
+            });
+          }
+          const accessToken = generateAccessToken(user);
+          const refreshToken = generateRefreshToken(user);
+          res.status(200).json({
+            message: 'Login successful',
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            user: user,
+            code: '200',
+            status: 'success',
+          });
         });
-      });
-    })(req, res, next);
+      })(req, res, next);
+      return;
+    }
+
+    const findUser = await User.findOne({email});
+    console.log(findUser, 'findLoginUserDez');
+    if (!findUser) {
+      return res
+        .status(404)
+        .json({message: 'User not found', code: '404', status: 'error'});
+    }
+
+    const isMatch = await comparePassword(password, findUser.password);
+    if (!isMatch) {
+      return res
+        .status(404)
+        .json({message: 'Incorrect credentials', code: '404', status: 'error'});
+    }
+    const accessToken = generateAccessToken(findUser);
+    const refreshToken = generateRefreshToken(findUser);
+    res.status(200).json({
+      message: 'Login successful',
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      user: findUser,
+      code: '200',
+      status: 'success',
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -508,6 +553,43 @@ export const validateGoogleAuthUserController = async (req, res) => {
     });
   } catch (err) {
     console.log(err, 'g auth err');
+    res.status(500).json({
+      status: 'error',
+      code: '500',
+      message: 'Internal server error',
+      error: err,
+    });
+  }
+};
+
+export const refreshTokenController = async (req, res) => {
+  try {
+    const {refreshToken} = req.body;
+
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      return res
+        .status(401)
+        .json({message: 'Invalid refresh token', code: '401'});
+    }
+
+    jwt.verify(refreshToken, process.env.REFRESH_SECRET_KEY, (err, user) => {
+      if (err) {
+        if (err.name === 'TokenExpiredError') {
+          return res
+            .status(401)
+            .json({message: 'Refresh token expired', code: '401'});
+        }
+        return res
+          .status(403)
+          .json({message: 'Invalid refresh token', code: '403'});
+      }
+
+      const accessToken = generateAccessToken({_id: user.userId});
+      console.log(accessToken, 'refreshedToken');
+      res.json({accessToken});
+    });
+  } catch (err) {
+    console.log(err);
     res.status(500).json({
       status: 'error',
       code: '500',
